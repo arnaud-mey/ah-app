@@ -1,0 +1,49 @@
+name: Build and Dockerize
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      # - uses: benjlevesque/short-sha@v3.0
+      #   id: short-sha
+      #   with:
+      #     length: 6
+      - name: Configure AWS Credentials 2
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: eu-central-1
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          #role-to-assume: arn:aws:iam::058264537240:user/github-workflow
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - run: docker build -t 058264537240.dkr.ecr.eu-central-1.amazonaws.com/hello-app:${{ github.sha }} .
+      - name: Push to ECR
+        run: |
+          docker push "058264537240.dkr.ecr.eu-central-1.amazonaws.com/hello-app:${{ github.sha }}"
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GH_PAT }}
+          repository: arnaud-mey/ah-argo
+      - run: yq '.images[0].newTag = "${{ github.sha }}"' kustomization.yaml > kustomization.yaml.tmp && mv kustomization.yaml.tmp kustomization.yaml
+        working-directory: hello-app/overlays/prod
+      - uses: EndBug/add-and-commit@v9 # You can change this to use a specific version.
+        with:
+          committer_name: hello-app-workflow
+          default_author: github_actions
