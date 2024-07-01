@@ -14,17 +14,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      # - uses: benjlevesque/short-sha@v3.0
-      #   id: short-sha
-      #   with:
-      #     length: 6
       - name: Configure AWS Credentials 2
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: eu-central-1
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
-          #role-to-assume: arn:aws:iam::058264537240:user/github-workflow
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
